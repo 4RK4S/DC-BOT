@@ -34,24 +34,8 @@ pip install -r requirements.txt
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the project root.
-4. Fill in the required values:
-
-```env
-DISCORD_TOKEN=
-SLAHUB_BASE_URL=
-CREATOR_BOT_API_SECRET=
-CREATOR_BOT_API_HOST=127.0.0.1
-CREATOR_BOT_API_PORT=
-CREATOR_BOT_GUILD_ID=
-CREATOR_BOT_GUILD_IDS=
-SLASH_GUILD_IDS=
-DEVELOPMENT_GUILD_IDS=
-CLEAR_GUILD_COMMANDS_ON_STARTUP=false
-BOT_STATUS_TEXT=Solo Leveling:ARISE
-BOT_STATUS_TYPE=playing
-BOT_DATABASE_PATH=data/bot.db
-```
+3. Copy `.env.example` to `.env`.
+4. Fill in the required local values.
 
 5. Start the bot:
 
