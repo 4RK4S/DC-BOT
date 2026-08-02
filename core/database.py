@@ -152,6 +152,9 @@ class Database:
                 guild_id INTEGER NOT NULL,
                 code TEXT NOT NULL,
                 source TEXT,
+                reward TEXT,
+                note TEXT,
+                source_url TEXT,
                 expires_at TEXT,
                 active INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -475,6 +478,21 @@ class Database:
             },
         )
         await self._migrate_creator_codes_schema()
+        await self._ensure_columns(
+            "live_codes",
+            {
+                "guild_id": "INTEGER",
+                "code": "TEXT",
+                "source": "TEXT",
+                "reward": "TEXT",
+                "note": "TEXT",
+                "source_url": "TEXT",
+                "expires_at": "TEXT",
+                "active": "INTEGER NOT NULL DEFAULT 1",
+                "created_at": "TEXT",
+                "updated_at": "TEXT",
+            },
+        )
         await self._ensure_columns(
             "live_code_settings",
             {

@@ -127,9 +127,12 @@ class SetPublicChannelModal(nextcord.ui.Modal):
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
         await self.cog.service.set_public_channel(interaction.guild_id, channel.id, interaction.user.id)
-        await self.cog.refresh_public_list(interaction.guild_id)
+        self.cog.schedule_public_refresh(interaction.guild_id)
         await refresh_modal_panel(self.source_message, self.cog, self.show_admin_back)
-        await interaction.response.send_message("Public channel saved.", ephemeral=True)
+        await interaction.response.send_message(
+            "Public channel saved. Public list refresh was queued.",
+            ephemeral=True,
+        )
 
 
 class SetAnnouncementChannelModal(nextcord.ui.Modal):
@@ -259,6 +262,7 @@ class LiveCodeManagementView(nextcord.ui.View):
                 "live_codes:set_announcement",
                 "live_codes:set_role",
                 "live_codes:refresh",
+                "live_codes:notify_new",
                 "live_codes:remove",
                 "live_codes:settings",
                 "live_codes:admin_back",
@@ -286,19 +290,56 @@ class LiveCodeManagementView(nextcord.ui.View):
     async def refresh_public_list(self, button: nextcord.ui.Button, interaction: nextcord.Interaction) -> None:
         if not await ensure_manager(interaction):
             return
-        await self.cog.refresh_public_list(interaction.guild_id)
+        # A component interaction must be acknowledged immediately. The actual
+        # Discord fetch/edit runs in the background because Discord may impose a
+        # long per-message or announcement-channel rate limit.
+        await interaction.response.defer(ephemeral=True)
+        self.cog.schedule_public_refresh(interaction.guild_id)
         await self.cog.service.db.log_action(
             interaction.guild_id,
             "live_codes",
-            "public_list_refreshed",
+            "public_list_refresh_queued",
             user_id=interaction.user.id,
         )
-        await interaction.response.edit_message(
-            content=None,
-            embed=self.cog.service.build_management_embed(),
-            view=LiveCodeManagementView(self.cog, show_admin_back=self.show_admin_back),
+        await interaction.followup.send(
+            "Public list refresh queued. If the list is already current, the Discord message will not be edited.",
+            ephemeral=True,
         )
-        await interaction.followup.send("Public list refreshed.", ephemeral=True)
+
+    @nextcord.ui.button(
+        label="Send NEW Notification",
+        style=nextcord.ButtonStyle.primary,
+        custom_id="live_codes:notify_new",
+        row=1,
+    )
+    async def send_new_notification(
+        self,
+        button: nextcord.ui.Button,
+        interaction: nextcord.Interaction,
+    ) -> None:
+        if not await ensure_manager(interaction):
+            return
+        await interaction.response.defer(ephemeral=True)
+        status, count, affected_codes = await self.cog.queue_new_code_notification(
+            interaction.guild_id,
+            interaction.user.id,
+        )
+        if status == "queued":
+            text = f"NEW notification queued with {count} code(s)."
+        elif status == "empty":
+            text = "There are no codes in NEW, so no notification was sent."
+        elif status == "busy":
+            text = "A NEW notification is already being sent. No duplicate was queued."
+        elif status == "missing_rewards":
+            joined = ", ".join(f"`{code}`" for code in affected_codes[:10])
+            extra = f" and {len(affected_codes) - 10} more" if len(affected_codes) > 10 else ""
+            text = (
+                "Notification was not sent because reward data is missing for: "
+                f"{joined}{extra}. Wait for SLAHub metadata sync or save the codes again in SLAHub."
+            )
+        else:
+            text = "Set an announcement channel before sending a NEW notification."
+        await interaction.followup.send(text, ephemeral=True)
 
     @nextcord.ui.button(label="Set Public Channel", style=nextcord.ButtonStyle.success, custom_id="live_codes:set_channel", row=0)
     async def set_public_channel(self, button: nextcord.ui.Button, interaction: nextcord.Interaction) -> None:

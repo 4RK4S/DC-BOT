@@ -8,9 +8,11 @@ class Config:
     discord_token: str
     slahub_base_url: str
     creator_bot_api_secret: str
+    live_code_bot_api_secret: str
     creator_bot_api_host: str
     creator_bot_api_port: int | None
     creator_bot_guild_id: int | None
+    live_code_bot_guild_id: int | None
     creator_bot_guild_ids: list[int]
     slash_command_guild_ids: list[int]
     development_guild_ids: list[int]
@@ -28,6 +30,8 @@ class Config:
         ids = self.creator_bot_guild_ids or self.development_guild_ids or self.slash_command_guild_ids
         if self.creator_bot_guild_id is not None:
             ids = [*ids, self.creator_bot_guild_id]
+        if self.live_code_bot_guild_id is not None:
+            ids = [*ids, self.live_code_bot_guild_id]
         return list(dict.fromkeys(ids))
 
     @property
@@ -40,13 +44,20 @@ class Config:
 
     @classmethod
     def from_env(cls) -> "Config":
+        creator_secret = os.getenv("CREATOR_BOT_API_SECRET", "").strip()
+        live_code_secret = os.getenv("LIVE_CODE_BOT_API_SECRET", "").strip() or creator_secret
+        creator_guild_id = _optional_int("CREATOR_BOT_GUILD_ID")
+        live_code_guild_id = _optional_int("LIVE_CODE_BOT_GUILD_ID") or creator_guild_id
+
         return cls(
             discord_token=os.getenv("DISCORD_TOKEN", "").strip(),
             slahub_base_url=os.getenv("SLAHUB_BASE_URL", "").strip(),
-            creator_bot_api_secret=os.getenv("CREATOR_BOT_API_SECRET", "").strip(),
+            creator_bot_api_secret=creator_secret,
+            live_code_bot_api_secret=live_code_secret,
             creator_bot_api_host=os.getenv("CREATOR_BOT_API_HOST", "127.0.0.1").strip(),
             creator_bot_api_port=_optional_int("CREATOR_BOT_API_PORT"),
-            creator_bot_guild_id=_optional_int("CREATOR_BOT_GUILD_ID"),
+            creator_bot_guild_id=creator_guild_id,
+            live_code_bot_guild_id=live_code_guild_id,
             creator_bot_guild_ids=_optional_int_list("CREATOR_BOT_GUILD_IDS"),
             slash_command_guild_ids=_optional_int_list("SLASH_GUILD_IDS"),
             development_guild_ids=_optional_int_list("DEVELOPMENT_GUILD_IDS"),
