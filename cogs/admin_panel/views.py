@@ -36,6 +36,7 @@ GRAY_MODULES = {
 
 RED_MODULES = {
     "Anti-Nuke",
+    "Moderation",
 }
 
 SPECIAL_LAST_MODULES = {"Settings"}
@@ -47,6 +48,7 @@ IMPLEMENTED_MODULES = GREEN_MODULES | BLUE_MODULES | SPECIAL_LAST_MODULES | {
     "Listener",
     "Live Codes",
     "Messages",
+    "Moderation",
     "Requests",
     "Roles",
     "Server Boost",
@@ -210,6 +212,15 @@ class ModuleButton(nextcord.ui.Button):
                     content=None,
                     embed=messages_cog.service.build_management_embed(),
                     view=messages_cog.create_management_view(show_admin_back=True),
+                )
+                return
+        if self.module_name == "Moderation":
+            moderation_cog = bot.get_cog("ModerationCog")
+            if moderation_cog is not None:
+                await interaction.response.edit_message(
+                    content=None,
+                    embed=await moderation_cog.service.build_panel_embed(interaction.guild),
+                    view=moderation_cog.create_panel_view(show_admin_back=True),
                 )
                 return
         if self.module_name == "Forwarder":
@@ -421,7 +432,9 @@ def build_command_info_embed(bot: commands.Bot) -> nextcord.Embed:
 
 
 def get_application_command_names(bot: commands.Bot) -> list[str]:
-    getter = getattr(bot, "get_application_commands", None)
+    getter = getattr(bot, "get_all_application_commands", None)
+    if not callable(getter):
+        getter = getattr(bot, "get_application_commands", None)
     commands_iterable = getter() if callable(getter) else getattr(bot, "application_commands", [])
     names: list[str] = []
     for command in commands_iterable or []:

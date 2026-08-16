@@ -374,6 +374,45 @@ class Database:
                 PRIMARY KEY (guild_id, user_id)
             );
 
+            CREATE TABLE IF NOT EXISTS moderation_settings (
+                guild_id INTEGER PRIMARY KEY,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                default_duration TEXT NOT NULL DEFAULT '1h',
+                notify_by_default INTEGER NOT NULL DEFAULT 1,
+                log_channel_id INTEGER,
+                mute_dm_template TEXT NOT NULL DEFAULT 'You have been muted in {server}. Duration: {duration}. Reason: {reason}.',
+                unmute_dm_template TEXT NOT NULL DEFAULT 'You have been unmuted in {server}. Reason: {reason}.',
+                warn_threshold INTEGER NOT NULL DEFAULT 0,
+                warn_action TEXT NOT NULL DEFAULT 'mute',
+                warn_action_duration TEXT NOT NULL DEFAULT '1h',
+                account_protection_enabled INTEGER NOT NULL DEFAULT 1,
+                account_protection_window_seconds INTEGER NOT NULL DEFAULT 60,
+                account_protection_min_channels INTEGER NOT NULL DEFAULT 3,
+                account_protection_min_messages INTEGER NOT NULL DEFAULT 3,
+                account_protection_min_attachments INTEGER NOT NULL DEFAULT 3,
+                account_protection_timeout_duration TEXT NOT NULL DEFAULT '24h',
+                account_protection_alert_channel_id INTEGER,
+                account_protection_alert_role_id INTEGER,
+                account_protection_alert_user_id INTEGER,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS moderation_cases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id INTEGER NOT NULL,
+                target_id INTEGER NOT NULL,
+                moderator_id INTEGER NOT NULL,
+                action TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                duration_seconds INTEGER,
+                expires_at TEXT,
+                active INTEGER NOT NULL DEFAULT 0,
+                dm_sent INTEGER NOT NULL DEFAULT 0,
+                source TEXT NOT NULL DEFAULT 'command',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_module_settings_guild_id
                 ON module_settings(guild_id);
             CREATE INDEX IF NOT EXISTS idx_persistent_views_guild_id
@@ -414,6 +453,10 @@ class Database:
                 ON request_status(review_message_id);
             CREATE INDEX IF NOT EXISTS idx_server_boost_posts_guild_id
                 ON server_boost_posts(guild_id);
+            CREATE INDEX IF NOT EXISTS idx_moderation_cases_guild_target
+                ON moderation_cases(guild_id, target_id, created_at);
+            CREATE INDEX IF NOT EXISTS idx_moderation_cases_active
+                ON moderation_cases(guild_id, active, expires_at);
             """
         )
         await connection.execute(
@@ -422,6 +465,23 @@ class Database:
             VALUES (?)
             """,
             (CURRENT_SCHEMA_VERSION,),
+        )
+        await self._ensure_columns(
+            "moderation_settings",
+            {
+                "warn_threshold": "INTEGER NOT NULL DEFAULT 0",
+                "warn_action": "TEXT NOT NULL DEFAULT 'mute'",
+                "warn_action_duration": "TEXT NOT NULL DEFAULT '1h'",
+                "account_protection_enabled": "INTEGER NOT NULL DEFAULT 1",
+                "account_protection_window_seconds": "INTEGER NOT NULL DEFAULT 60",
+                "account_protection_min_channels": "INTEGER NOT NULL DEFAULT 3",
+                "account_protection_min_messages": "INTEGER NOT NULL DEFAULT 3",
+                "account_protection_min_attachments": "INTEGER NOT NULL DEFAULT 3",
+                "account_protection_timeout_duration": "TEXT NOT NULL DEFAULT '24h'",
+                "account_protection_alert_channel_id": "INTEGER",
+                "account_protection_alert_role_id": "INTEGER",
+                "account_protection_alert_user_id": "INTEGER",
+            },
         )
         await self._ensure_columns(
             "creator_code_settings",

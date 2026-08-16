@@ -77,6 +77,17 @@ python main.py
 - `/messages-panel` opens the message management panel.
 - `/send-img` sends uploaded images and image links to a selected channel.
 - `/clear` deletes messages from the current channel.
+- `/mute` temporarily mutes a member and can notify them by DM.
+- `/mute-edit` changes an active mute duration or reason.
+- `/unmute` removes an active mute and can notify the member by DM.
+- `/moderation-panel` opens the moderation controls and settings.
+- `/warn`, `/warnings`, `/warn-edit`, and `/unwarn` manage member warnings.
+- `/kick`, `/ban`, `/tempban`, and `/unban` manage removals and bans.
+- `/case`, `/cases`, and `/case-edit` manage numbered moderation cases.
+- `/slowmode`, `/lock`, and `/unlock` manage channel restrictions.
+- `/nickname` changes or clears a member nickname.
+- `/purge-user` deletes a member's messages from the current channel or all accessible channels, using either a message amount or a time range.
+- Automatic Account Protection detects repeated multi-image spam across several channels, removes the detected posts, applies a configurable timeout, and alerts staff.
 - `/forwarder-panel` opens the Forwarder management panel.
 - `/listener-panel` opens the Listener management panel.
 - `/welcome-panel` opens the Welcome management panel.
@@ -114,6 +125,12 @@ The Messages module provides tools for sending, replying to, editing, inspecting
 ### Clear
 
 The Clear module provides the `/clear` command for deleting messages from the current channel. It is intended for administrators or managers who need quick moderation cleanup.
+
+### Moderation
+
+The Moderation module manages timeouts, warnings, kicks, permanent bans, temporary bans, unbans, nicknames, channel locks, slowmode, and targeted message cleanup. `/purge-user` supports `amount`, a duration such as `5m` or `2h`, and an `all_channels` switch; with no amount or duration it deletes the member's newest message. Every punishment receives a numbered moderation case. Staff can inspect and edit cases, remove warnings, configure automatic action after a chosen number of active warnings, and use optional DM notifications. Temporary bans are removed automatically after expiry. The module validates moderator permissions, bot permissions, role hierarchy, and Discord's 28-day timeout limit. The Admin Panel includes direct moderation actions, active mutes, case lookup, history, notification settings, logs, and warning automation.
+
+Account Protection watches non-staff members for a narrow compromised-account spam pattern. By default it requires at least three suspicious messages, each containing at least three images, across at least three different channels within 60 seconds. At least two messages must have the same content and attachment fingerprint. When triggered, the bot deletes the tracked spam, applies a 24-hour timeout, creates moderation and audit records, sends the member a DM when possible, and posts a red alert in the configured moderation log channel (falling back to the server system channel). Administrators, moderators, bots, and webhooks are exempt. Thresholds, enabled state, and timeout duration can be changed from the Moderation panel.
 
 ### Forwarder
 

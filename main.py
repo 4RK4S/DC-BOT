@@ -22,6 +22,7 @@ COGS = (
     "cogs.live_codes.cog",
     "cogs.messages.cog",
     "cogs.clear.cog",
+    "cogs.moderation.cog",
     "cogs.forwarder.cog",
     "cogs.listener.cog",
     "cogs.welcome.cog",
@@ -122,7 +123,9 @@ def log_registered_application_commands(bot: commands.Bot, logger: logging.Logge
 
 
 def get_registered_application_command_names(bot: commands.Bot) -> list[str]:
-    getter = getattr(bot, "get_application_commands", None)
+    getter = getattr(bot, "get_all_application_commands", None)
+    if not callable(getter):
+        getter = getattr(bot, "get_application_commands", None)
     if callable(getter):
         commands_iterable = getter()
     else:
